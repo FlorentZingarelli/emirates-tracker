@@ -7,28 +7,17 @@ import { emiratesFleet, type Aircraft } from "../lib/fleet";
 /* ─── Constants ─── */
 const OPENSKY_URL = "/emirates-tracker/data/flights.json";
 
-/* ─── Types ─── */
-type TabId = "live" | "search" | "fleet";
+/* OpenSky API returns states as arrays, not objects.
+   Array index positions:
+     [0] icao24, [1] callsign, [2] originCountry, [3] timePosition,
+     [4] lastContact, [5] longitude, [6] latitude, [7] baroAltitude,
+     [8] onGround, [9] velocity, [10] trueTrack, [11] verticalRate,
+     [12] sensors, [13] geoAltitude, [14] squawk, [15] spi, [16] positionSource
+*/
+type OpenSkyState = any[];
 
-interface OpenSkyState {
-  icao24: string;
-  callsign: string | null;
-  originCountry: string;
-  timePosition: number;
-  lastContact: number;
-  longitude: number | null;
-  latitude: number | null;
-  baroAltitude: number | null;
-  onGround: boolean;
-  velocity: number | null;
-  trueTrack: number | null;
-  verticalRate: number | null;
-  sensors: number[] | null;
-  geoAltitude: number | null;
-  squawk: string | null;
-  spi: boolean;
-  positionSource: number;
-}
+// Types for tab navigation
+type TabId = "live" | "search" | "fleet";
 
 function parseFlightNumber(callsign: string): string {
   const clean = callsign.trim().replace(/\s+/g, "");
@@ -39,21 +28,21 @@ function parseFlightNumber(callsign: string): string {
 function statesToFlights(states: OpenSkyState[]): EmiratesFlight[] {
   return states
     .filter((s) => {
-      const cs = (s.callsign || "").trim().replace(/\s+/g, "");
-      return cs.startsWith("UAE") && s.latitude !== null && s.longitude !== null;
+      const cs = (s[1] || "").trim().replace(/\s+/g, "");
+      return cs.startsWith("UAE") && s[6] !== null && s[5] !== null;
     })
     .map((s) => ({
-      callsign: (s.callsign || "").trim(),
-      flightNumber: parseFlightNumber(s.callsign || ""),
-      longitude: s.longitude ?? 0,
-      latitude: s.latitude ?? 0,
-      altitude: Math.round((s.baroAltitude ?? 0) * 3.28084),
-      speed: s.velocity !== null ? Math.round(s.velocity * 1.94384) : 0,
-      heading: Math.round(s.trueTrack ?? 0),
-      verticalRate: s.verticalRate !== null ? Math.round(s.verticalRate * 196.85) : 0,
-      onGround: s.onGround,
-      originCountry: s.originCountry,
-      lastContact: s.lastContact,
+      callsign: (s[1] || "").trim(),
+      flightNumber: parseFlightNumber(s[1] || ""),
+      longitude: s[5] ?? 0,
+      latitude: s[6] ?? 0,
+      altitude: Math.round((s[7] ?? 0) * 3.28084),
+      speed: s[9] !== null ? Math.round(s[9] * 1.94384) : 0,
+      heading: Math.round(s[10] ?? 0),
+      verticalRate: s[11] !== null ? Math.round(s[11] * 196.85) : 0,
+      onGround: s[8],
+      originCountry: s[2],
+      lastContact: s[4],
     }))
     .sort((a, b) => a.flightNumber.localeCompare(b.flightNumber));
 }
