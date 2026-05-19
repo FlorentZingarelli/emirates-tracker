@@ -1,0 +1,26 @@
+name: Fetch Emirates Flights
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch OpenSky API data
+        run: |
+          mkdir -p public/data
+          curl -s "https://opensky-network.org/api/states/all" \
+            -o public/data/flights.json --max-time 15
+          echo "Fetched $(wc -c < public/data/flights.json) bytes"
+      - name: Commit & push
+        run: |
+          git add public/data/flights.json
+          git diff --quiet && echo "No changes" && exit 0
+          git config user.name "Emirates Tracker Bot"
+          git config user.email "bot@emirates-tracker"
+          git commit -m "chore: update flight data [skip ci]"
+          git push

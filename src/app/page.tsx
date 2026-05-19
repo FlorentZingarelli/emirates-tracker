@@ -5,7 +5,7 @@ import type { EmiratesFlight } from "../lib/types";
 import { emiratesFleet, type Aircraft } from "../lib/fleet";
 
 /* ─── Constants ─── */
-const OPENSKY_URL = "https://corsproxy.io/?url=https://opensky-network.org/api/states/all";
+const OPENSKY_URL = "/emirates-tracker/data/flights.json";
 
 /* ─── Types ─── */
 type TabId = "live" | "search" | "fleet";
