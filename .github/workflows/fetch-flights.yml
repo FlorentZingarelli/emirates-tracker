@@ -13,18 +13,19 @@ jobs:
       - name: Fetch OpenSky API data
         run: |
           mkdir -p public/data
-          curl -s "https://opensky-network.org/api/states/all" \
+          # Try to fetch — never fail the workflow if the API is down
+          if curl -s "https://opensky-network.org/api/states/all" \
             -o public/data/flights.json \
             --max-time 30 \
-            --retry 3 \
-            --retry-delay 5 \
-            --retry-all-errors
-          BYTES=$(wc -c < public/data/flights.json)
-          echo "Fetched $BYTES bytes"
-          # If the file is too small, it's likely an error response
-          if [ "$BYTES" -lt 50 ]; then
-            echo "Warning: response too small, API may be unavailable"
-            exit 0  # don't fail the workflow, keep previous data
+            --retry 2 \
+            --retry-delay 5; then
+            BYTES=$(wc -c < public/data/flights.json)
+            echo "Fetched $BYTES bytes"
+            if [ "$BYTES" -lt 50 ]; then
+              echo "Warning: response too small, API may be unavailable"
+            fi
+          else
+            echo "Warning: OpenSky API unreachable, keeping previous data"
           fi
       - name: Commit & push
         run: |
